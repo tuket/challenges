@@ -34,3 +34,4 @@
 *.in
 *out.txt
 *.vscode*
+callgrind.*

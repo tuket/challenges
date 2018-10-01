@@ -1,51 +1,43 @@
 #include <iostream>
 #include <vector>
+#include <array>
+#include <algorithm>
+#include <cmath>
+#include <iomanip>
 
 using namespace std;
 
-const int MAX_N = 2000000000;
+typedef array<int, 4> M;
 
-template<int N>
-int pw(int n)
-{
-    static vector<int> v = [=](){
-        vector<int> v(MAX_N+1);
-        int x = 1;
-        for(int i=0; i<MAX_N+1; i++) {
-            v[i] = x;
-            v[i] *= N;
-            v[i] %= 1000;
-        }
-        return v;
-    }();
-    return v[n];
+M operator*(const M& a, const M& b) {
+    M res = {
+            (a[0]*b[0] + a[1]*b[2]) % 1000,
+            (a[0]*b[1] + a[1]*b[3]) % 1000,
+            (a[2]*b[0] + a[3]*b[2]) % 1000,
+            (a[2]*b[1] + a[3]*b[3]) % 1000
+    };
+    return res;
 }
 
-int fct(int n)
+M pow(M m, int n)
 {
-    static vector<int> v = [=](){
-        vector<int> v(MAX_N+1);
-        v[0] = 1;
-        int x = 1;
-        for(int i=1; i<MAX_N+1; i++) {
-            v[i] = v[i-1] * i;
-            v[i] %= 1000;
+    M res = {1, 0, 0, 1};
+    for(int i=0; i<32; i++)
+    {
+        int msk = 1 << i;
+        if(msk & n) {
+            res = res * m;
         }
-        return v;
-    }();
-    return v[n];
-}
-
-vector<int> coeffs(int n)
-{
-    vector<int> res = {1, 1};
-    res.reserve(n+1);
-    for(int i=0; )
+        m = m * m;
+    }
+    return res;
 }
 
 int solve(int n)
 {
-
+	M m = {3, 5, 1, 3};
+    m = pow(m, n);
+    return (2 * m[0] + 999) % 1000;
 }
 
 int main()
@@ -56,6 +48,6 @@ int main()
     {
         int n;
         cin >> n;
-        cout << "Case #" << kk << ": " << solve(n) << endl;
+        cout << "Case #" << kk << ": " << setfill('0') << setw(3) << solve(n) << endl;
     }
 }

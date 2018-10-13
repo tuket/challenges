@@ -1,4 +1,3 @@
-// g++ a_view.cpp -lsfml-graphics -lsfml-window -lsfml-system -g
 #include <iostream>
 #include <vector>
 #include <functional>

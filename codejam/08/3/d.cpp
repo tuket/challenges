@@ -2,15 +2,23 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+#include <algorithm>
+#include <cassert>
 
 static const int M = 10007;
+
+using namespace std;
 
 struct P
 {
     int x, y;
     bool operator==(const P& p)const
-        { return x == p.y && y == p.y; }
+        { return x == p.x && y == p.y; }
 };
+
+P sort(P p) {
+    return {min(p.x, p.y), max(p.x, p.y)};
+}
 
 namespace std
 {
@@ -27,23 +35,24 @@ namespace std
     };
 }
 
-using namespace std;
-
-int64_t esol(P p)
+vector<int> precomp()
 {
-    if(p.x == 0 || p.y == 0)
-        return 1;
-    static unordered_map<P, int64_t> s;
-    auto it = s.find(p);
-    if(it != s.end()) {
-        return it->second;
+    vector<int> s(M*M, 1);
+    for(int y=1; y<M; y++)
+    for(int x=1; x<M; x++)
+    {
+        s[M*y+x] = (s[M*y+x-1] + s[M*(y-1)+x]) % M;
     }
-    else {
-        int64_t sol = esol({p.x-1, p.y}) + esol({p.x, p.y-1});
-        sol %= M;
-        s[p] = sol;
-        return sol;
-    }
+    return s;
+}
+
+int esol(P p)
+{
+    p.x %= M;
+    p.y %= M;
+    const uint i = p.y*M + p.x;
+    static vector<int> s = precomp();
+    return s[i];
 }
 
 class Solver
@@ -51,35 +60,48 @@ class Solver
 public:
     Solver(int W, int H, vector<P>&& rocks)
         : W(W), H(H), rocks(std::move(rocks))
-    {}
+    {
+        for(const P& r : this->rocks)
+            br.insert(r);
+    }
 
     uint64_t solve() { return solve(W-1, H-1); }
 
     uint64_t solve(int x, int y)
     {
+        if(x < 0 || y < 0)
+            return 0;
         if(x == 0 && y == 0)
             return 1;
         
         int ix = 0, iy = 0;
-        unordered_set<P> br;
         for(const P& r : rocks)
+        if(r.x == x)
         {
-            // TODO
+            if(r.y < y)
+                iy = max(iy, r.y+1);
+        }
+        for(const P& r : rocks)
+        if(r.y >= iy && r.y <= y && r.x < x)
+        {
+            ix = max(ix, r.x+1);
         }
 
         if(ix == 0 && iy == 0)
-            return esol({x+1, y+1});
+            return esol({x, y});
         
         int64_t res = 0;
-        for(int xx=ix+1; ix<=x; xx++)
+        if(iy > 0)
+        for(int xx=ix; xx<=x; xx++)
         if(!br.count({xx, iy-1}))
         {
-            res = (res + solve(xx, iy-1)) % M;
+            res = (res + solve(xx, iy-1) * esol({x-xx, y-iy})) % M;
         }
-        for(int yy=iy+1; yy<=y; yy++)
+        if(ix > 0)
+        for(int yy=iy; yy<=y; yy++)
         if(!br.count({ix-1, yy}))
         {
-            res = (res + solve(ix-1, yy)) % M;
+            res = (res + solve(ix-1, yy) * esol({x-ix, y-yy})) % M;
         }
         return res;
     }
@@ -87,6 +109,7 @@ public:
 private:
     int W, H;
     vector<P> rocks;
+    unordered_set<P> br;
 };
 
 int main()
@@ -97,32 +120,35 @@ int main()
     {
         int W, H, R;
         cin >> H >> W >> R;
-        vector<P> rocks(R);
+        vector<P> rocks;
         for(int i=0; i<R; i++)
         {
             int y, x;
             cin >> y >> x;
+            x--; y--;
             int rx = 0;
-            while(x > 2*y) {
+            while(2*x > y) {
                 rx++;
                 x-=2;
                 y-=1;
             }
-            int ry = y;
-            rocks[i] = {rx, ry};
+            if(x >= 0 && y >= 0 && 2*x == y) {
+                int ry = x;
+                rocks.push_back({rx, ry});
+            }
         }
-        int RW = 0;
+        int RW = 1;
         W--; H--;
-        while(W > 2*H) {
+        while(2*W > H) {
             RW++;
             W-=2;
             H-=1;
         }
-        if(2*H != W) {
+        if(H != 2*W) {
             cout << "Case #" << kk << ": 0" << endl;
             continue;
         }
-        int RH = H;
+        int RH = W+1;
 
         Solver solver(RW, RH, move(rocks));
         int64_t res = solver.solve();

@@ -14,6 +14,10 @@ struct P
     int x, y;
     bool operator==(const P& p)const
         { return x == p.x && y == p.y; }
+    bool operator!=(const P& p)const
+        { return !operator==(p); }
+    bool isParent(const P& p)const
+        { return x <= p.x && y <= p.y; }
 };
 
 P sort(P p) {
@@ -35,24 +39,61 @@ namespace std
     };
 }
 
-vector<int> precomp()
+int powMod(unsigned x, unsigned n)
 {
-    vector<int> s(M*M, 1);
-    for(int y=1; y<M; y++)
-    for(int x=1; x<M; x++)
+    unsigned res = 1;
+    unsigned b = 1 << (sizeof(unsigned)*8-2);
+    while(b != 0)
     {
-        s[M*y+x] = (s[M*y+x-1] + s[M*(y-1)+x]) % M;
+        res = (res * res) % M;
+        if(b & n)
+            res = (res * x) % M;
+        b >>= 1;
     }
-    return s;
+    return res;
+}
+
+int binCoef(int k, int n)
+{
+    int me = 0; // number of times you can divide k! by M
+    int pm = M;
+    while(pm <= k)
+    {
+        me += k / pm;
+        pm *= M;
+    }
+
+    int used = 0;
+    int a = 1;  // numerator
+    for(int i=n-k+1; i<=n; i++)
+    {
+        int ii=i;
+        while(used < me && ii % M == 0) {
+            ii /= M;
+            used++;
+        }
+        a = (a*ii) % M;
+    }
+
+    int b = 1;  // denominator
+    for(int i=1; i<=k; i++)
+    {
+        int ii=i;
+        while(ii % M == 0) {
+            ii /= M;
+        }
+        b = (b*ii) % M;;
+    }
+
+    // invert b
+    b = powMod(b, M-2);
+
+    return (a*b) % M;
 }
 
 int esol(P p)
 {
-    p.x %= M;
-    p.y %= M;
-    const uint i = p.y*M + p.x;
-    static vector<int> s = precomp();
-    return s[i];
+    return binCoef(p.x, p.x + p.y);
 }
 
 class Solver
@@ -65,43 +106,43 @@ public:
             br.insert(r);
     }
 
-    uint64_t solve() { return solve(W-1, H-1); }
+    uint64_t solve() { return solve(W, H); }
 
-    uint64_t solve(int x, int y)
+    uint64_t solve(int X, int Y)
     {
-        if(x < 0 || y < 0)
+        if(X < 0 || Y < 0)
             return 0;
-        if(x == 0 && y == 0)
+        if(X == 0 && Y == 0)
             return 1;
         
-        int ix = 0, iy = 0;
+        int res =  esol({X, Y});
+        struct SW { P r; int val; };
+        vector<SW> layer;
         for(const P& r : rocks)
-        if(r.x == x)
         {
-            if(r.y < y)
-                iy = max(iy, r.y+1);
+            int val = esol({r.x, r.y}) * esol({X-r.x, Y-r.y}) % M;
+            res = (M + res - val) % M;
+            layer.push_back({r, esol({r.x, r.y})});
         }
-        for(const P& r : rocks)
-        if(r.y >= iy && r.y <= y && r.x < x)
+        int sign = +1;
+        while(layer.size())
         {
-            ix = max(ix, r.x+1);
-        }
-
-        if(ix == 0 && iy == 0)
-            return esol({x, y});
-        
-        int64_t res = 0;
-        if(iy > 0)
-        for(int xx=ix; xx<=x; xx++)
-        if(!br.count({xx, iy-1}))
-        {
-            res = (res + solve(xx, iy-1) * esol({x-xx, y-iy})) % M;
-        }
-        if(ix > 0)
-        for(int yy=iy; yy<=y; yy++)
-        if(!br.count({ix-1, yy}))
-        {
-            res = (res + solve(ix-1, yy) * esol({x-ix, y-yy})) % M;
+            vector<SW> newLayer;
+            for(const SW& sw : layer)
+            {
+                for(const P& r : rocks)
+                if(sw.r != r)
+                {
+                    if(sw.r.isParent(r))
+                    {
+                        int val = (sw.val * esol({r.x - sw.r.x, r.y - sw.r.y})) % M;
+                        res = (M + res + sign * (val * esol({X-r.x, Y-r.y}))%M) % M;
+                        newLayer.push_back({r, val});
+                    }
+                }
+            }
+            sign *= -1;
+            layer = newLayer;
         }
         return res;
     }
@@ -120,38 +161,34 @@ int main()
     {
         int W, H, R;
         cin >> H >> W >> R;
+
+        W--; H--;
+        int RW = (2*W - H) / 3;
+        int RH = (2*H - W) / 3;
+        bool impossible = RW < 0 || RH < 0 || (2*W-H) % 3 != 0;
+        
         vector<P> rocks;
         for(int i=0; i<R; i++)
         {
             int y, x;
             cin >> y >> x;
             x--; y--;
-            int rx = 0;
-            while(2*x > y) {
-                rx++;
-                x-=2;
-                y-=1;
-            }
-            if(x >= 0 && y >= 0 && 2*x == y) {
-                int ry = x;
+            int rx = (2*x - y) / 3;
+            int ry = (2*y - x) / 3;
+            if (rx >= 0 && ry >= 0 && rx <= RW && ry <= RH && (2*x-y) % 3 == 0)
+            {
                 rocks.push_back({rx, ry});
             }
         }
-        int RW = 1;
-        W--; H--;
-        while(2*W > H) {
-            RW++;
-            W-=2;
-            H-=1;
-        }
-        if(H != 2*W) {
+        
+        if(impossible) {
             cout << "Case #" << kk << ": 0" << endl;
-            continue;
         }
-        int RH = W+1;
-
-        Solver solver(RW, RH, move(rocks));
-        int64_t res = solver.solve();
-        cout << "Case #" << kk << ": " << res << endl;
+        else {
+            Solver solver(RW, RH, move(rocks));
+            int64_t res = solver.solve();
+            cout << "Case #" << kk << ": " << res << endl;
+        }
+        
     }
 }

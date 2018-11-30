@@ -55,6 +55,19 @@ int64_t powMod(int64_t x, int64_t n)
 
 int64_t binCoef(int64_t k, int64_t n)
 {
+    // Luca's theorem
+    if(n >= M)
+    {
+        int64_t res = 1;
+        do {
+            res = (res * binCoef(k%M, n%M)) % M;
+            k /= M;
+            n /= M;
+        } while(n > 0);
+        return res;
+    }
+
+
     int64_t me = 0; // number of times you can divide k! by M
     int64_t pm = M;
     while(pm <= k)

@@ -74,6 +74,7 @@ int main()
     {
         cin >> t(x, y);
     }
+    t.precomp();
 
     int bestSy = 0;
     int bestSx = 0;

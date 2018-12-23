@@ -14,22 +14,32 @@ int main()
         ll n, k;
         cin >> n >> k;
         string w;
-        ll x = k;
-        while(true)
+        if(k == 1)
         {
-            if(x > n)
-            {
+            if(n % 2 == 0)
                 w = "Bob";
-                break;
-            }
-            n -= x;
-            if(x > n)
-            {
+            else
                 w = "Alice";
-                break;
+        }
+        else
+        {
+            ll x = k;
+            while(true)
+            {
+                if(x > n)
+                {
+                    w = "Bob";
+                    break;
+                }
+                n -= x;
+                if(x > n)
+                {
+                    w = "Alice";
+                    break;
+                }
+                n -= x;
+                x *= k;
             }
-            n -= x;
-            x *= k;
         }
         cout << w << endl;
     }

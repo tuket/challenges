@@ -6,6 +6,17 @@ using namespace std;
 
 typedef array<int, 2> BW;
 
+int nb(int n)
+{
+    int res = 0;
+    while(n)
+    {
+        n >>= 1;
+        res++;
+    }
+    return res;
+}
+
 BW operator+(BW a, BW b)
 {
     BW bw = {a[0] + b[0], a[1] + b[1]};
@@ -29,37 +40,69 @@ struct Table
 
     int& operator()(int x, int y) { return v[x+W*y]; }
     BW operator()(int x, int y, int w, int h);
+    BW operator()(int x, int w, int h);
 
     void precomp();
 
     unsigned W, H;
     vector<int> v;
 
-    vector<vector<BW>> g;
+    vector<vector<vector<BW>>> g;
 };
 
 void Table::precomp()
 {
-    g.resize(H);
+    int nl = nb(H);
+    g.resize(nl);
+    int c = H;
+    g[0].resize(c);
     for(int y=0; y<H; y++)
     {
-        g[y].resize(W+1);
-        g[y][0] = {0, 0};
+        g[0][y].resize(W+1);
+        g[0][y][0] = {0, 0};
         for(int x=0; x < W; x++)
         {
-            g[y][x+1] = g[y][x];
-            g[y][x+1][operator()(x, y)]++;
+            g[0][y][x+1] = g[0][y][x];
+            g[0][y][x+1][operator()(x, y)]++;
+        }
+    }
+    for(int l=1; l<nl; l++)
+    {
+        c >>= 1;
+        g[l].resize(c);
+        for(int i=0; i<c; i++)
+        {
+            g[l][i].resize(W+1);
+            for(int x=0; x < W; x++)
+            {
+                g[l][i][x] = g[l-1][2*i][x] + g[l-1][2*i+1][x];
+            }
         }
     }
 }
 
 BW Table::operator()(int x, int y, int w, int h)
 {
+    return operator()(x, w, y+h) - operator()(x, w, y);
+}
+
+BW Table::operator()(int x, int w, int h)
+{
     BW bw {0, 0};
-    for(int yy=0; yy<h; yy++)
+    if(h == 0)
+        return bw;
+    
+    int c = h;
+    int l = 0;
+    while(c)
     {
-        BW bwRow = g[y+yy][x+w] - g[y+yy][x];
-        bw = bw + bwRow;
+        if(c & 1)
+        {
+            auto& gy = g[l][c-1];
+            bw = bw + (gy[x+w] - gy[x]);
+        }
+        c >>= 1;
+        l++;
     }
     return bw;
 }

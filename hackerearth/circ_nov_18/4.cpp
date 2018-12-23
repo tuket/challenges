@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <array>
-#include <set>
+#include <map>
 
 using namespace std;
 
@@ -58,13 +58,16 @@ int main()
         cin >> L >> R >> x;
         ull res = 0;
         const AT a = A[R] - A[L-1];
-
+        vector<int> keys; keys.reserve(256);
         for(int i=0; i<256; i++)
-        if(a[i] != 0 && (i & x) == x)
-        for(int j=0; j<256; j++)
-        if(a[j] != 0 && (i & j & x) == x)
-        for(int k=0; k<256; k++)
-        if(a[k] != 0)
+        if(a[i] != 0)
+            keys.push_back(i);
+
+        for(int i : keys)
+        if((i & x) == x)
+        for(int j : keys)
+        if((i & j & x) == x)
+        for(int k : keys)
         if((i & j & k) == x)
         {
             ull ar = (a[i] * a[j]) % M;

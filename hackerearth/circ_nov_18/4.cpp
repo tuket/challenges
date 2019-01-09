@@ -48,7 +48,48 @@ int main()
         cin >> x;
         A[i][x]++;
     }
-        
+    
+    array<vector<int>, 256> KK1;
+    for(int x=0; x<256; x++)
+    for(int i=0; i<256; i++)
+    {
+        if((i & x) == x)
+            KK1[x].push_back(i);
+    }
+
+    array<array<vector<int>, 256>, 256> KK2;
+    for(int x=0; x<256; x++)
+    for(int i : KK1[x])
+    for(int j : KK1[x])
+    {
+        if((i & j & x) == x)
+            KK2[x][i].push_back(j);
+    }
+
+    //x -> zeros -> vector
+    vector<array<array<ull, 256>, 256>> P3(N+1);
+    for(int ia=0; ia<=N; ia++)
+    for(int x=0; x<256; x++)
+    {
+        //P3[ia][x] = {0};
+        for(int i : KK1[x])
+        for(int j : KK2[x][i])
+        {
+            ull c = 0;
+            int mask = (i & j) ^ x;
+            for(int k : KK2[x][i])
+            {
+                if((i & j & k) == x)
+                {
+                    c = (c + A[ia][k]) % M;
+                }
+            }
+            //ull val = (c * xv) % M;
+            ull& p3 = P3[ia][x][mask];
+            p3 = (p3 + c) % M;
+        }
+    }
+
     int NQ;
     cin >> NQ;
     for(int iq=0; iq<NQ; iq++)
@@ -59,19 +100,29 @@ int main()
         ull res = 0;
         const AT a = A[R] - A[L-1];
         vector<int> keys; keys.reserve(256);
-        for(int i=0; i<256; i++)
+        for(int i : KK1[x])
         if(a[i] != 0)
             keys.push_back(i);
 
+        vector<vector<int>> keys2(256);
         for(int i : keys)
-        if((i & x) == x)
-        for(int j : keys)
-        if((i & j & x) == x)
-        for(int k : keys)
-        if((i & j & k) == x)
+        for(int j : KK2[x][i])
+        if(a[j] != 0)
         {
-            ull ar = (a[i] * a[j]) % M;
-            ar = (ar * a[k]) % M;
+            keys2[i].push_back(j);
+        }
+
+        for(int i : keys)
+        {
+            ull ires = 0;
+            for(int j : keys2[i])
+            {
+                int mask = (i & j) ^ x;
+                ull jres = P3[R][x][mask] - P3[L-1][x][mask];
+                jres = (a[j] * jres) % M;
+                ires = (ires + jres) % M;
+            }
+            ull ar = (a[i] * ires) % M;
             res = (res + ar) % M;
         }
 

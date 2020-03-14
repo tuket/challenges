@@ -1,0 +1,1 @@
+g++ rnd_gen.cpp && ./a.out > in.txt && g++ ggg.cpp && ./a.out < in.txt && echo " " && g++ ACPC10G.cpp -g && ./a.out < in.txt

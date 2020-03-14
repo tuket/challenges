@@ -8,11 +8,12 @@ using namespace std;
 int main()
 {
 	srand(time(0));
-	int nn = 1 + rand() % 10;
+	//int nn = 1 + rand() % 10;
+	int nn = 1;
 	for(int kk = 0; kk < nn; kk++)
 	{
 		//int n = 1 + rand() % 5;
-		int n = 8;
+		int n = 4;
 		printf("%d\n", n);
 		set<int> used;
 		for(int i = 0; i < 2*n; i++)

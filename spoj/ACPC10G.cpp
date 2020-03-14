@@ -8,6 +8,7 @@ using namespace std;
 typedef int64_t i64;
 typedef int8_t i8;
 typedef uint8_t u8;
+typedef int32_t i32;
 typedef uint32_t u32;
 
 struct P { i64 x, y; };
@@ -147,54 +148,96 @@ i64 testTable()
 	}
 }
 
-i64 hungarianAlgorithm(const i64* costs, u8 n)
+i64 hungarianAlgorithm(const i64* costs, i32 n)
 {
 	static i64 t[16*16];
-	for(u8 i = 0; i < n*n; i++)
+	for(i32 i = 0; i < n*n; i++)
 		t[i] = costs[i];
 	// rows pass
-	for(u8 y = 0; y < n; y++) {
+	for(i32 y = 0; y < n; y++) {
 		i64 minVal = t[y*n];
-		for(u8 x = 1; x < n; x++)
+		for(i32 x = 1; x < n; x++)
 			minVal = min(minVal, t[x + y*n]);
-		for(u8 x = 0; x < n; x++)
+		for(i32 x = 0; x < n; x++)
 			t[x + y*n] -= minVal;
 	}
 	// cols pass
-	for(u8 x = 0; x < n; x++) {
+	for(i32 x = 0; x < n; x++) {
 		i64 minVal = t[x];
-		for(u8 y = 1; y < n; y++)
+		for(i32 y = 1; y < n; y++)
 			minVal = min(minVal, t[x + y*n]);
-		for(u8 y = 0; y < n; y++)
+		for(i32 y = 0; y < n; y++)
 			t[x + y*n] -= minVal;
 	}
 	// count zeros in each row/col
-	static u8 zeros[32];
-	for(u8 y = 0; y < n; y++) {
+	static i32 zeros[32];
+	for(i32 y = 0; y < n; y++) {
 		zeros[y] = 0;
-		for(u8 x = 0; x < n; x++)
+		for(i32 x = 0; x < n; x++)
 			if(t[x + y*n] == 0)
 				zeros[y]++;
 	}
-	for(u8 x = 0; x < n; x++) {
+	for(i32 x = 0; x < n; x++) {
 		zeros[n+x] = 0;
-		for(u8 y = 0; y < n; y++)
+		for(i32 y = 0; y < n; y++)
 			if(t[x + y*n] == 0)
 				zeros[n+x]++;
 	}
 
 	while(true)
 	{
-		u8 zeros2[32];
-		for(u8 i = 0; i < 2*n; i++)
+		i32 zeros2[32];
+		for(i32 i = 0; i < 2*n; i++)
 			zeros2[i] = zeros[i];
 		bitset<32> crossed = 0;
 		// find min number of zero crossings
 		while(crossed.count() < n)
 		{
-			u8 maxZeros = zeros2[0];
-			u8 maxZerosInd = 0;
-			for(u8 i = 1; i < 2*n; i++) {
+			bitset<32> crossed2 = 0;
+			for(i32 y = 0; y < n; y++) {
+				for(i32 x = 0; x < n; x++) {
+					if(t[x + n*y] == 0 && !crossed2[n+x]) {
+						crossed2[n+x] = true;
+						crossed2[y] = true;
+						break;
+					}
+				}
+			}
+			// Mark all rows having no assignments
+			bitset<32> marked = 0;
+			bitset<16> justMarkedRows;
+			for(i32 y = 0; y < n; y++) {
+				if(!crossed2[y]) {
+					marked[y] = true;
+				}
+			}
+			do {
+				// Mark all columns having zeros in newly marked rows
+				bitset<16> justMarkedCols = 0;
+				for(i32 x = 0; x < n; x++) {
+					for(i32 y = 0; y < n; y++) {
+						if(marked[y] && t[x + n*y] == 0) {
+							justMarkedCols[x] = true;
+							break;
+						}
+					}
+				}
+				// Mark all rows having assignments in newly marked columns
+				justMarkedRows = 0;
+				for(i32 y = 0; y < n; y++) {
+					for(i32 x = 0; x < n; x++) {
+						if(justMarkedCols[x] && crossed2[y] && crossed2[x+n]) {
+							justMarkedRows[y] = true;
+							break;
+						}
+					}
+				}
+
+			} while(justMarkedRows || justMarkedCols);
+
+			/*i32 maxZeros = zeros2[0];
+			i32 maxZerosInd = 0;
+			for(i32 i = 1; i < 2*n; i++) {
 				if(maxZeros < zeros2[i]) {
 					maxZeros = zeros2[i];
 					maxZerosInd = i;
@@ -205,37 +248,37 @@ i64 hungarianAlgorithm(const i64* costs, u8 n)
 			zeros2[maxZerosInd] -= maxZeros;
 			crossed[maxZerosInd] = true;
 			if(maxZerosInd < n) { // row
-				for(i8 x = 0; x < n; x++) {
+				for(i32 x = 0; x < n; x++) {
 					if(t[x + maxZerosInd*n] == 0 && !crossed[n+x]) {
 						zeros2[n+x]--;
 					}
 				}
 			}
 			else { // col
-				for(i8 y = 0; y < n; y++) {
+				for(i32 y = 0; y < n; y++) {
 					if(t[maxZerosInd-n + y*n] == 0 && !crossed[y]) {
 						zeros2[y]--;
 					}
 				}
-			}
+			}*/
 		}
 
 		if(crossed.count() == n) {
 			i64 res = 0;
-			for(i8 i = 0; i < n; i++)
+			for(i32 i = 0; i < n; i++)
 			{
 				i64 minZeros = 0x7FFF'FFFF'FFFF'FFFF;
 				i64 minZerosInd = -1;
-				for(i8 j = 0; j < 2*n; j++)
+				for(i32 j = 0; j < 2*n; j++)
 				if(zeros[j] > 0 && zeros[j] < minZeros) {
 					minZeros = zeros[j];
 					minZerosInd = j;
 				}
 				{
-					i8 j = minZerosInd;
+					i32 j = minZerosInd;
 					zeros[j] = 0;
 					if(j < n) { // row
-						i8 x;
+						i32 x;
 						for(x = 0; x < n; x++) {
 							if(zeros[x+n] && t[x + n*j] == 0) {
 								zeros[x+n] = 0;
@@ -243,7 +286,7 @@ i64 hungarianAlgorithm(const i64* costs, u8 n)
 								break;
 							}
 						}
-						for(i8 y = 0; y < n; y++)
+						for(i32 y = 0; y < n; y++)
 							if(y != j && t[x + n*y] == 0)
 								zeros[y]--;
 						for(x++; x < n; x++)
@@ -253,7 +296,7 @@ i64 hungarianAlgorithm(const i64* costs, u8 n)
 					}
 					else { // col
 						j -= n;
-						i8 y;
+						i32 y;
 						for(y = 0; y < n; y++) {
 							if(zeros[y] && t[j + n*y] == 0) {
 								zeros[y] = 0;
@@ -261,7 +304,7 @@ i64 hungarianAlgorithm(const i64* costs, u8 n)
 								break;
 							}
 						}
-						for(i8 x = 0; x < n; x++)
+						for(i32 x = 0; x < n; x++)
 							if(x != j && t[x + n*y] == 0)
 								zeros[x+n]--;
 						for(y++; y < n; y++)
@@ -274,15 +317,15 @@ i64 hungarianAlgorithm(const i64* costs, u8 n)
 		}
 		else { // crossed.count() < n
 			i64 valMin = 0x7FFF'FFFF'FFFF'FFFF;
-			for(i8 y = 0; y < n; y++)
-			for(i8 x = 0; x < n; x++)
+			for(i32 y = 0; y < n; y++)
+			for(i32 x = 0; x < n; x++)
 			{
 				if(!crossed[y] && !crossed[x+n] && t[x+y*n] < valMin) {
 					valMin = t[x+y*n];
 				}
 			}
-			for(i8 y = 0; y < n; y++)
-			for(i8 x = 0; x < n; x++)
+			for(i32 y = 0; y < n; y++)
+			for(i32 x = 0; x < n; x++)
 			{
 				if(!crossed[y] && !crossed[x+n]) {
 					t[x+y*n] -= valMin;

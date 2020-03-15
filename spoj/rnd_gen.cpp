@@ -9,7 +9,7 @@ int main()
 {
 	srand(time(0));
 	//int nn = 1 + rand() % 10;
-	int nn = 1;
+	int nn = 10;
 	for(int kk = 0; kk < nn; kk++)
 	{
 		//int n = 1 + rand() % 5;
